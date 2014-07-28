@@ -1,0 +1,4 @@
+clientId:1	type:telefon	maxCena:30	priorytetCena:1	priorytetData:0	timeBind:300	strategyName:cyclic	ShotTime:25	shotPrice:1
+clientId:2	type:telefon	maxCena:10	priorytetCena:0	priorytetData:1	timeBind:200	strategyName:acyclic_end	ShotTime:25	ShotPrice:2
+clientId:4	type:telefon	maxCena:5	priorytetCena:1	priorytetData:0	timeBind:300	strategyName:acyclic_start	ShotTime:30	ShotPrice:1
+clientId:3	type:telefon	maxCena:15	priorytetCena:1	priorytetData:0	timeBind:300	strategyName:cyclic	ShotTime:20	ShotPrice:2

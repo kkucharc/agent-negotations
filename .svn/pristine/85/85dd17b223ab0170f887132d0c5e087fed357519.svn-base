@@ -1,0 +1,94 @@
+package behaviours;
+
+import java.util.ArrayList;
+
+import data.Announce;
+import jade.core.Agent;
+import jade.core.behaviours.CyclicBehaviour;
+import jade.core.behaviours.ParallelBehaviour;
+import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
+import agents.BiddingAgent;
+
+public class ReceiveMessageFromMorris extends CyclicBehaviour {
+
+	private MessageTemplate mt;
+	private BiddingAgent a;
+	private ParallelBehaviour parentBehaviour;
+
+	public ReceiveMessageFromMorris(Agent a, MessageTemplate mt,
+			ParallelBehaviour parentB) {
+		super(a);
+		this.a = (BiddingAgent) a;
+		this.mt = mt;
+		this.parentBehaviour = parentB;
+	}
+
+	@Override
+	public void action() {
+
+		ACLMessage msg = a.receive(mt);
+		if (msg == null) {
+			block();
+			return;
+		}
+
+		/*
+		 * sprawdzanie czy to odpowiedz - na podbicie aukcji (czyli
+		 * accept/decline) - wy wyszukanie aukcji (informative)
+		 */
+		try {
+			Object content = msg.getContentObject();
+			switch (msg.getPerformative()) {
+			/* aukcje */
+			case (ACLMessage.REQUEST):
+
+				ArrayList<Announce> announces = (ArrayList<Announce>) content;
+
+				if (announces != null) {
+					a.setMyAnnoces(announces);
+					System.out.println("ODBIOR od MORRISA - "
+							+ myAgent.getLocalName() + " <- "
+							+ msg.getSender().getLocalName() + " "
+							+ "licytuje:");
+
+					for (Announce a : announces) {
+						System.out.println(" - " + "id: " + a.getId()
+								+ " typ: " + a.getTyp() + " cena: "
+								+ a.getCena());
+					}
+				}else{
+					System.out.println("Puste announce");
+				}
+
+				/* wybierz i podbij */
+				break;
+
+			case (ACLMessage.ACCEPT_PROPOSAL):
+				System.out.println("ODBIOR od MORRISA - "
+						+ myAgent.getLocalName() + " <- "
+						+ msg.getSender().getLocalName()
+						+ " udalo mi sie podbic aukcje " + msg.getContent());
+
+				break;
+
+			case (ACLMessage.REJECT_PROPOSAL):
+
+				/* szukaj kolejna do podpbicia */
+				System.out
+						.println("ODBIOR od MORRISA - "
+								+ myAgent.getLocalName() + " <- "
+								+ msg.getSender().getLocalName()
+								+ " nie udalo mi sie podbic aukcje "
+								+ msg.getContent());
+
+				break;
+			}
+
+		} catch (Exception e) {
+			System.out.println("Nie udalo sie odebrac wiadomosci");
+		}
+
+	}
+
+}

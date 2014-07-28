@@ -1,0 +1,69 @@
+package behaviours;
+
+import jade.core.Agent;
+import jade.core.behaviours.Behaviour;
+import jade.core.behaviours.CyclicBehaviour;
+import jade.core.behaviours.ParallelBehaviour;
+import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
+import agents.BiddingAgent;
+import data.Preference;
+
+/**
+ * Odbiór wiadomosci od klienta przez BiddingAgent
+ * 
+ * @author Kasia
+ *
+ */
+
+public class ReceiveMessageBiddingFromClient extends CyclicBehaviour {
+
+	private MessageTemplate mt;
+	private BiddingAgent a;
+	private ParallelBehaviour parentBehaviour;
+
+	public ReceiveMessageBiddingFromClient(Agent a, MessageTemplate mt,
+			ParallelBehaviour parentB) {
+		super(a);
+		this.a = (BiddingAgent) a;
+		this.mt = mt;
+		this.parentBehaviour = parentB;
+	}
+
+	@Override
+	public void action() {
+
+		ACLMessage msg = a.receive(mt);
+		if (msg == null) {
+			block();
+			return;
+		}
+
+		try {
+			Object content = msg.getContentObject();
+			switch (msg.getPerformative()) {
+
+			case (ACLMessage.REQUEST):
+				if (content instanceof Preference) {
+					Preference p = (Preference) content;
+					a.setPreference(p);
+					Behaviour loop = new CyclicBidBehaviour(myAgent,
+							p);
+					parentBehaviour.addSubBehaviour(loop);
+
+					System.out.println("ODBIOR od KLIENTA - "
+							+ myAgent.getLocalName() + " <- "
+							+ msg.getSender().getLocalName() + " "
+							+ " odbieram preferencje klienta: " + p.getType());
+
+				}
+				break;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.println("Nie udalo sie odebrac preferencji");
+		}
+
+	}
+
+}

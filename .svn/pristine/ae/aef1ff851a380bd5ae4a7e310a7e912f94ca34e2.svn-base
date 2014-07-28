@@ -1,0 +1,187 @@
+package agents;
+
+import jade.core.Agent;
+import jade.core.behaviours.CyclicBehaviour;
+import jade.domain.DFService;
+import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.ServiceDescription;
+import jade.lang.acl.ACLMessage;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.List;
+
+import dao.AnnoucementDAO;
+import dao.domain.Annoucement;
+import data.Preference;
+
+/* kolumna mowiaca o tym jakie sa aukcje na danym serwisie aukcyjnym */
+public class MorrisColumn extends Agent {
+
+	/* nazwa serwisu aucyjnego */
+	private String bidServiceName;
+
+	private List<Annoucement> allAnouces;
+
+	protected void setup() {
+		System.out.println("Jestem " + getLocalName());
+
+		/* testowe */
+
+		allAnouces = AnnoucementDAO.getAll();
+		for (Annoucement a : allAnouces) {
+
+			System.out.println("Aukcja nr " + a.getId() + " " + a.getType()
+					+ "\n\t - czas rozpoczêcia: " + a.getStartDate()
+					+ "\n\t - czas zakonczenia: " + a.getEndDate()
+					+ "\n\t - cena wywolawcza: " + a.getCurrentPrice());
+		}
+		
+		runAnnoucements();
+		
+		
+		allAnouces = AnnoucementDAO.getAll();
+		for (Annoucement a : allAnouces) {
+
+			System.out.println("Aukcja nr " + a.getId() + " " + a.getType()
+					+ "\n\t - czas rozpoczêcia: " + a.getStartDate()
+					+ "\n\t - czas zakonczenia: " + a.getEndDate()
+					+ "\n\t - cena wywolawcza: " + a.getCurrentPrice());
+		}
+		
+		searchAnnounces();
+		
+		registerService("system aukcyjny");
+
+		receiveMsg();
+	}
+
+	/* rejestracja agenta */
+	protected void registerService(String serviceType) {
+
+		/* tworzy opis agenta dodawanego do DF */
+		DFAgentDescription description = new DFAgentDescription();
+
+		description.setName(getAID());
+		ServiceDescription sd = new ServiceDescription();
+		sd.setType(serviceType);
+		sd.setName(getLocalName() + "-" + serviceType);
+		description.addServices(sd);
+		try {
+			System.out
+					.println(getLocalName() + " Rejestruje swoja usluge w DF");
+			DFService.register(this, description);
+		} catch (Exception ex) {
+			System.out.println(getLocalName()
+					+ " Nie udalo mi sie zarejestrowac uslugi");
+		}
+	}
+
+	/* dodanie zachowania odbierania cyklicznego widaomosci */
+	public void receiveMsg() {
+
+		addBehaviour(new CyclicBehaviour(this) {
+
+			public void action() {
+
+				ACLMessage msg = receive();
+				if (msg == null) {
+					block();
+					return;
+				}
+
+				try {
+					Object content = msg.getContentObject();
+					switch (msg.getPerformative()) {
+
+					case (ACLMessage.REQUEST):
+						if (content instanceof Preference) {
+							System.out
+									.println("ODBIOR - "
+											+ myAgent.getLocalName()
+											+ " <- "
+											+ msg.getSender().getLocalName()
+											+ " odbieram preferencje od agenta i szukam aukcji");
+							/* znajdz aukcje! i odpowiedz */
+
+							sendReply(msg);
+						}
+						break;
+					}
+				} catch (Exception e) {
+					System.out
+							.println("Morris: Nie udalo sie odebrac preferencji");
+				}
+
+			}
+		});
+
+	}
+
+	private void runAnnoucements() {
+		Date now;
+
+		for (Annoucement a : allAnouces) {
+
+			Calendar cal = new GregorianCalendar();
+
+			now = new Date();
+			a.setStartDate(now);
+
+			cal.setTime(now);
+			cal.add(Calendar.MINUTE, 5);
+			a.setEndDate(cal.getTime());
+			a.setStatus("start");
+
+			AnnoucementDAO.update(a);
+
+			System.out.println("Aukcja nr " + a.getId() + " " + a.getType()
+					+ "\n\t - czas rozpoczêcia: " + a.getStartDate()
+					+ "\n\t - czas zakonczenia: " + a.getEndDate()
+					+ "\n\t - cena wywolawcza: " + a.getCurrentPrice());
+		}
+
+	}
+
+	private List<Annoucement> searchAnnounces() {
+		List<Annoucement> found = new ArrayList<Annoucement>();
+		for (Annoucement a : allAnouces) {
+
+			// if (a.getTyp().equals("telefon")){
+
+			// found.add(a);
+			// }
+		}
+
+		return found;
+	}
+
+	public String getBidServiceName() {
+		return bidServiceName;
+	}
+
+	public void setBidServiceName(String name) {
+		this.bidServiceName = name;
+	}
+
+	private void sendReply(ACLMessage from) {
+		try {
+			/* odpowiedz */
+			ACLMessage reply = new ACLMessage(ACLMessage.REQUEST);
+			List<Annoucement> found = searchAnnounces();
+			if (found != null) {
+				reply.setContentObject((Serializable) found);
+				reply.setOntology("aukcja");
+				reply.addReceiver(from.getSender());
+				send(reply);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.println("Nie udalo sie odpowiedziec");
+		}
+	}
+
+}

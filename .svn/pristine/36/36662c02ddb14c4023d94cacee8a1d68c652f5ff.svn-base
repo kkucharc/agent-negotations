@@ -1,0 +1,123 @@
+package behaviours;
+
+import jade.core.Agent;
+import jade.core.behaviours.CyclicBehaviour;
+import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
+
+import java.io.Serializable;
+
+import agents.MorrisColumn;
+import dao.domain.Annoucement;
+import data.Annoucements;
+import data.Preference;
+
+/**
+ * Odbiór wiadomosci od BiddingAgent przez MorrisColumn
+ * 
+ * @author Kasia
+ * 
+ */
+
+public class ReceiveMessageMorrisFromBidder extends CyclicBehaviour {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 5643002166027664796L;
+	private MessageTemplate mt;
+	private MorrisColumn a;
+
+	public ReceiveMessageMorrisFromBidder(Agent a, MessageTemplate mt) {
+		super(a);
+		this.a = (MorrisColumn) a;
+		this.mt = mt;
+	}
+
+	@Override
+	public void action() {
+		ACLMessage msg = a.receive();
+		if (msg == null) {
+
+			block();
+
+			return;
+		}
+
+		try {
+			Object content = msg.getContentObject();
+			if (msg.getOntology().equals("aukcja")) {
+				if (content instanceof Preference) {
+					System.out
+							.println("ODBIOR - "
+									+ myAgent.getLocalName()
+									+ " <- "
+									+ msg.getSender().getLocalName()
+									+ " odbieram preferencje od agenta i szukam aukcji");
+					/* znajdz aukcje! i odpowiedz */
+
+					sendReply(msg);
+				}
+			} else if (msg.getOntology().equals("bid")) {
+				if (content instanceof Annoucement) {
+					Annoucement anounce = (Annoucement) content;
+					if(anounce==null){System.out.println("nulla dostalo");}
+					System.out.println("Annouce" + anounce.getId() + " data " +anounce.getStartDate());
+					a.addBehaviour(new OneShotBidBehaviour(anounce, Integer
+							.parseInt(msg.getSender().getLocalName()
+									.substring(7))));
+					System.out.println("ODBIOR - " + myAgent.getLocalName()
+							+ " <- " + msg.getSender().getLocalName()
+							+ " podbijam aukcje");
+					/* znajdz aukcje! i odpowiedz */
+
+					sendReplyBid(msg);
+				}
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.println("Morris: Nie udalo sie odebrac preferencji");
+		}
+
+	}
+
+	private void sendReplyBid(ACLMessage msg) {
+		// TODO Auto-generated method stub
+
+	}
+
+	private void sendReply(ACLMessage from) {
+		
+		try {
+			/* odpowiedz */
+			ACLMessage reply = new ACLMessage(ACLMessage.REQUEST);
+			Annoucements found = new Annoucements();
+			Preference p = (Preference) from.getContentObject();
+			if (a.searchAnnounces(p)
+					.getAnnoucements().size() != 0) {
+				found = a.searchAnnounces(p);
+				for (Annoucement a : found.getAnnoucements()) {
+					System.out.println("ODPOWIEDZ MORRISA Aukcja nr "
+							+ a.getId() + " " + a.getType()
+							+ "\n\t - czas rozpoczêcia: " + a.getStartDate()
+							+ "\n\t - czas zakonczenia: " + a.getEndDate()
+							+ "\n\t - cena wywolawcza: " + a.getCurrentPrice());
+				}
+				if (found != null) {
+					System.out.println("not null");
+					reply.setContentObject((Serializable) found);
+					reply.setOntology("aukcja");
+					reply.addReceiver(from.getSender());
+					a.send(reply);
+				}
+			} else {
+				System.out.println("Brak interesuj¹cej aukcji!");
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.println("Nie udalo sie odpowiedziec");
+		}
+	}
+}

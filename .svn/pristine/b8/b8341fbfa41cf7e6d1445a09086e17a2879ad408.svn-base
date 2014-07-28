@@ -1,0 +1,3 @@
+clientId:3	type:telefon	maxCena:30.00	priorytetCena:0	priorytetData:1	timeBind:300	strategyName:cena
+clientId:4	type:tv	maxCena:30.00	priorytetCena:0	priorytetData:1	timeBind:300	strategyName:cena
+clientId:5	type:rr	maxCena:30.00	priorytetCena:0	priorytetData:1	timeBind:300	strategyName:cena

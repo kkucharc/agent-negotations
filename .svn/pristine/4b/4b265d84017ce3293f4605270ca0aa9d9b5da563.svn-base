@@ -1,0 +1,79 @@
+package agents;
+
+import jade.core.AID;
+import jade.core.Agent;
+import jade.lang.acl.ACLMessage;
+import jade.wrapper.AgentContainer;
+import jade.wrapper.AgentController;
+
+import java.io.IOException;
+
+import dao.ClientDAO;
+import dao.domain.Client;
+import data.Preference;
+
+public class ClientAgent extends Agent {
+	String nameBidder;
+	Client clientInfo;
+
+	protected void setup() {
+		clientInfo = ClientDAO.get(Integer.parseInt(getLocalName().substring(6)));
+		
+		System.out.println("Jestem klientem o id " + getLocalName() + " nazwywam sie " + clientInfo.getName());
+
+		generateBiddingAgent();
+
+		/* TODO: pobranie preferencji z pliku konf */
+
+		Preference preference = new Preference();
+
+		/* testowe */
+		preference.setType("telefon");
+		preference.setMaxcena(30.00);
+		preference.setCenapriority(false);
+		preference.setDatapriority(true);
+		preference.setTimeBid(300);
+
+		sendMsg(preference);
+	}
+
+	protected void generateBiddingAgent() {
+
+		nameBidder = "Bidding" + clientInfo.getId();
+		AgentContainer c = getContainerController();
+		Object[] args = new Object[1];
+		args[0] = this;
+		try {
+			AgentController a = c.createNewAgent(nameBidder,
+					"agents.BiddingAgent", args);
+			a.start();
+		} catch (Exception e) {
+			System.out.println("Nie udalo sie stworzyc BiddingAgenta");
+		}
+
+	}
+
+	/* wysyla wiadomosc do swojego aukcyjnego przedstawiciela */
+	private void sendMsg(Preference msgContent) {
+		ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
+		msg.addReceiver(new AID(nameBidder, AID.ISLOCALNAME));
+		msg.setOntology("preferencje");
+		try {
+			msg.setContentObject(msgContent);
+		} catch (IOException e) {
+
+			e.printStackTrace();
+		}
+		send(msg);
+	}
+	
+	
+	public Client getClientInfo() {
+		return clientInfo;
+	}
+
+	public void setClientInfo(Client clientInfo) {
+		this.clientInfo = clientInfo;
+	}
+
+}

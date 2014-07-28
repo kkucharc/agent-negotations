@@ -1,0 +1,112 @@
+
+
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import dao.AnnoucementDAO;
+import dao.ClientDAO;
+import dao.DAOFactory;
+import dao.OfferDAO;
+import dao.domain.Annoucement;
+import dao.domain.Client;
+import dao.domain.Offer;
+import data.Preference;
+
+
+
+public class TestDAO {
+
+	Map<Integer, Preference> clientPreferences = new HashMap<Integer, Preference>();
+	String filePath = "clientInit.txt";
+	
+	public Boolean loadPreferences(String filePath){
+		FileReader fr;
+		try {
+			fr = new FileReader(filePath);
+
+			BufferedReader br = new BufferedReader(fr);
+			String s;
+		
+			while((s = br.readLine()) != null){
+				String[] data = s.split("\t");
+				if(data.length == 6 ){
+					int clientId = Integer.parseInt(data[0].split(":")[1]);
+					Preference p = new Preference();
+					p.setType(data[1].split(":")[1]);
+					p.setMaxcena(Double.parseDouble(data[2].split(":")[1]));
+					if(data[3].split(":")[1].equals("0"))
+						p.setCenapriority(false);
+					else
+						p.setCenapriority(true);
+					
+					if(data[4].split(":")[1].equals("0"))
+						p.setDatapriority(false);
+					else
+						p.setDatapriority(true);
+					p.setTimeBid(Integer.parseInt(data[5].split(":")[1]));
+					
+					clientPreferences.put(clientId, p);
+				}
+				
+				System.out.println(s);
+			}
+
+			fr.close();
+		} catch (FileNotFoundException e) {
+			return false;
+		}catch (IOException e) {
+			return false;
+		}
+		
+		return false;
+	}
+	
+	static public void main(String[] arg){
+		TestDAO test = new TestDAO();
+		test.loadPreferences("clientInit.txt");
+		
+		
+		/*		
+			DAOFactory.init();
+					
+			Offer offer = OfferDAO.get(1);
+			
+			offer.setClientId(2);
+			offer.setAnnoucementId(2);
+			offer.setPrice(150);
+			offer.setDate(new Date());
+			OfferDAO.save(offer);
+			
+			
+			Annoucement annoucement = new Annoucement();
+			annoucement.setType("telefon");
+			annoucement.setStartPrice(10);
+			annoucement.setCurrentPrice(15);
+			annoucement.setMinimumPrace(50);
+			annoucement.setStartDate(new Date());
+			annoucement.setEndDate(new Date());
+			annoucement.setSellerId(0);
+			annoucement.setStatus("start");
+			AnnoucementDAO.save(annoucement);
+			
+			Annoucement a = AnnoucementDAO.get(1);
+			a.setType("komputer");
+			AnnoucementDAO.update(a);
+*/			
+			
+
+	}
+	
+	
+}

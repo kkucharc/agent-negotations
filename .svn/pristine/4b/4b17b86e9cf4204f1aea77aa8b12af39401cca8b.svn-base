@@ -1,0 +1,47 @@
+package behaviours;
+
+import jade.core.behaviours.OneShotBehaviour;
+
+import java.util.Date;
+import java.sql.Timestamp;
+
+import agents.ClientAgent;
+
+import dao.AnnoucementDAO;
+import dao.OfferDAO;
+import dao.domain.Annoucement;
+import dao.domain.Offer;
+
+public class OneShotBidBehaviour extends OneShotBehaviour{
+
+	private Annoucement annouce;
+	private int client;
+	
+	public OneShotBidBehaviour(Annoucement a, int client){
+		
+		this.annouce = a;
+		this.client = client;
+	}
+	
+	
+	@Override
+	public void action() {
+		Offer o = new Offer();
+		
+		Date d = new Date();
+		
+		o.setDate(new Timestamp(d.getTime()));
+		o.setAnnoucementId(annouce.getId());
+		o.setClientId(client);
+		int newPrice = annouce.getCurrentPrice()+1; 
+		o.setPrice(newPrice);
+		annouce.setCurrentPrice(newPrice);
+		annouce.setWinnerOfert(client);
+		
+		AnnoucementDAO.update(annouce);
+		OfferDAO.save(o);
+		
+		
+	}
+
+}

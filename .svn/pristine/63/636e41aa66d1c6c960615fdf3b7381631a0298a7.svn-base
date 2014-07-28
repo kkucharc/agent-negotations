@@ -1,0 +1,34 @@
+package data;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import dao.domain.Annoucement;
+import jade.util.leap.Serializable;
+
+public class Annoucements implements Serializable{
+	List<Annoucement> annoucements;
+
+	public Annoucements(){
+		this.annoucements = new ArrayList<Annoucement>();
+	}
+	
+	public List<Annoucement> getAnnoucements() {
+		return annoucements;
+	}
+
+	public void setAnnoucements(List<Annoucement> annoucements) {
+		this.annoucements = annoucements;
+	}
+	
+	public void addAnnoucement(Annoucement a) {
+		
+	}
+
+	public void add(Annoucement a) {
+		annoucements.add(a);
+		
+	}
+	
+	
+}

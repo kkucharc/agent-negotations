@@ -1,0 +1,142 @@
+package agents;
+
+import jade.core.Agent;
+import jade.core.behaviours.CyclicBehaviour;
+import jade.domain.DFService;
+import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.ServiceDescription;
+import jade.lang.acl.ACLMessage;
+
+import java.util.ArrayList;
+
+import data.Announce;
+import data.Preference;
+
+/* kolumna mowiaca o tym jakie sa aukcje na danym serwisie aukcyjnym */
+public class MorrisColumn extends Agent {
+
+	/* nazwa serwisu aucyjnego */
+	private String bidServiceName;
+
+	private ArrayList<Announce> allAnouces;
+
+	protected void setup() {
+		System.out.println("Jestem " + getLocalName());
+
+		/* testowe */
+
+		allAnouces = new ArrayList<Announce>();
+		allAnouces.add(new Announce("telefon", 20, 1));
+		allAnouces.add(new Announce("telefon", 21, 2));
+		allAnouces.add(new Announce("tv", 200, 3));
+
+
+		searchAnnounces();
+		registerService("system aukcyjny");
+
+		receiveMsg();
+	}
+
+	/* rejestracja agenta */
+	protected void registerService(String serviceType) {
+
+		/* tworzy opis agenta dodawanego do DF */
+		DFAgentDescription description = new DFAgentDescription();
+
+		description.setName(getAID());
+		ServiceDescription sd = new ServiceDescription();
+		sd.setType(serviceType);
+		sd.setName(getLocalName() + "-" + serviceType);
+		description.addServices(sd);
+		try {
+			System.out
+					.println(getLocalName() + " Rejestruje swoja usluge w DF");
+			DFService.register(this, description);
+		} catch (Exception ex) {
+			System.out.println(getLocalName()
+					+ " Nie udalo mi sie zarejestrowac uslugi");
+		}
+	}
+
+	/* dodanie zachowania odbierania cyklicznego widaomosci */
+	public void receiveMsg() {
+
+		addBehaviour(new CyclicBehaviour(this) {
+
+			public void action() {
+
+				ACLMessage msg = receive();
+				if (msg == null) {
+					block();
+					return;
+				}
+
+				try {
+					Object content = msg.getContentObject();
+					switch (msg.getPerformative()) {
+
+					case (ACLMessage.REQUEST):
+						if (content instanceof Preference) {
+							System.out
+									.println("ODBIOR - "
+											+ myAgent.getLocalName()
+											+ " <- "
+											+ msg.getSender().getLocalName()
+											+ " odbieram preferencje od agenta i szukam aukcji");
+							/* znajdz aukcje! i odpowiedz */
+
+							sendReply(msg);
+						}
+						break;
+					}
+				} catch (Exception e) {
+					System.out
+							.println("Morris: Nie udalo sie odebrac preferencji");
+				}
+
+			}
+		});
+
+	}
+
+	private ArrayList<Announce> searchAnnounces() {
+		ArrayList<Announce> found = new ArrayList<Announce>();
+		for (Announce a : allAnouces) {
+			
+			
+			if (a.getTyp().equals("telefon")){
+				
+				found.add(a);
+			}
+		}
+
+		return found;
+	}
+
+	public String getBidServiceName() {
+		return bidServiceName;
+	}
+
+	public void setBidServiceName(String name) {
+		this.bidServiceName = name;
+	}
+
+	private void sendReply(ACLMessage from){
+		try{
+			/* odpowiedz */
+			ACLMessage reply = new ACLMessage(
+					ACLMessage.REQUEST);
+			ArrayList<Announce> found = searchAnnounces();
+			if (found != null) {
+				reply.setContentObject(found);
+				reply.setOntology("aukcja");
+				reply.addReceiver(from.getSender());
+				send(reply);
+			}
+		} catch (Exception e){
+			e.printStackTrace();
+			System.out.println("Nie udalo sie odpowiedziec");
+		}
+	}
+	
+}
